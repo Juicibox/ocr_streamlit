@@ -1,6 +1,6 @@
 streamlit==1.23.1
-opencv-python==4.6.0.66
 opencv-contrib-python==4.6.0.66
+opencv-python==4.6.0.66
 Pillow==9.5.0
 googlesearch-python==1.2.3
 paddle-bfloat==0.1.7
