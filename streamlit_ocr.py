@@ -1,8 +1,9 @@
 import cv2
 from PIL import Image
 import tkinter as tk
-from paddleocr import PaddleOCR
+from paddleocr import PaddleOCR, draw_ocr
 import os
+from matplotlib import pyplot as plt
 import streamlit as st
 from googlesearch import search
 import webbrowser
