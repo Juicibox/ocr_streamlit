@@ -12,7 +12,7 @@ ocr = PaddleOCR(lang='es')
 
 def capture_image():
     cap = cv2.VideoCapture(0)
-    font_path = os.path.join('PaddleOCR', 'doc', 'fonts', 'latin.ttf')
+    font_path = os.path.join('font', 'latin.ttf')
     ret, img = cap.read()
     img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
     result = ocr.ocr(img)
