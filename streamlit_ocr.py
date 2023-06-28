@@ -1,10 +1,8 @@
 import cv2
+import streamlit as st
 from PIL import Image
-import tkinter as tk
 from paddleocr import PaddleOCR, draw_ocr
 import os
-from matplotlib import pyplot as plt
-import streamlit as st
 from googlesearch import search
 import webbrowser
 
@@ -18,19 +16,19 @@ def capture_image():
     img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
     result = ocr.ocr(img)
     result = result[0]
-    boxes = [res[0] for res in result] 
+    boxes = [res[0] for res in result]
     scores = [res[1][1] for res in result]
     texts = [res[1][0] for res in result]
-    st.image(img, channels="RGB", use_column_width=True)
-    st.write("Textos:", texts)
+    plt.figure(figsize=(15,15))
+    annotated = draw_ocr(img, boxes, texts, scores, font_path=font_path)
+    plt.imshow(annotated)
 
-    # Obtener los textos como una cadena concatenada
     text_concatenated = ' '.join(texts)
-    st.write('Texto concatenado:', text_concatenated)
+    print('Texto concatenado:', text_concatenated)
 
     # Realizar la búsqueda en Google
     search_results = list(search(text_concatenated, num_results=5))
-    st.write('Resultados de búsqueda:', search_results)
+    print('Resultados de búsqueda:', search_results)
 
     # Abrir el primer resultado en el navegador web
     if search_results:
@@ -38,11 +36,16 @@ def capture_image():
 
     # Liberar la cámara
     cap.release()
-
+    
 def main():
     st.title("Aplicación de OCR y Búsqueda en Google")
-    st.write("Presiona el botón para capturar una imagen y realizar la búsqueda en Google:")
-    if st.button("Capturar Imagen"):
+
+    if st.button("Realizar Escaneo"):
         capture_image()
+
+if __name__ == "__main__":
+    main()
+
+
 
 
