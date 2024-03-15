@@ -9,7 +9,6 @@ img_file = st.file_uploader("Cargar imagen", type=['jpg', 'jpeg', 'png', 'webp',
 if img_file is not None:
     image = Image.open(img_file)
     img_array = np.array(image)
-
-text = pytesseract.image_to_string(image)
-st.write(text)
+    text = pytesseract.image_to_string(image)
+    st.write(text)
 
