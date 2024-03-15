@@ -25,6 +25,6 @@ if img_file is not None:
 
     # Botón para copiar el texto al portapapeles
     if st.button("Copiar texto"):
-        pyperclip.copy(text)
+        pyperclip.copy(text_area.value)
         st.success("Texto copiado al portapapeles")
             
