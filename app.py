@@ -21,7 +21,7 @@ if img_file is not None:
     
     st.write("Texto extraido:")
     # Mostrar resultado
-    text_area = st.text_area("Texto extraído", "\n".join(texts), height=200)
+    text_area = st.text_area("\n".join(texts), height=200)
 
         # Botón para copiar el texto al portapapeles
     if st.button("Copiar texto"):
