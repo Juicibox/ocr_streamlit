@@ -25,8 +25,8 @@ if img_file is not None:
 
         # Botón para copiar el texto al portapapeles
    if st.button("Copiar texto"):
-    try:
-        pyperclip.copy(text_area)  # Actualiza el texto copiado
-        st.success("Texto copiado al portapapeles")
-    except Exception as e:
-        st.error(f"Error al copiar el texto: {e}")
+       try:
+           pyperclip.copy(text_area)  # Actualiza el texto copiado
+            st.success("Texto copiado al portapapeles")
+       except Exception as e:
+           st.error(f"Error al copiar el texto: {e}")
