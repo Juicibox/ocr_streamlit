@@ -10,7 +10,8 @@ img_file = st.file_uploader("Cargar imagen", type=['jpg', 'jpeg', 'png', 'webp',
 if img_file is not None:
     image = Image.open(img_file)
     img_array = np.array(image)
-
+    st.image(image, caption='Imagen cargada', use_column_width=True)
+    
     # Procesar imagen con PaddleOCR
     ocr_model = PaddleOCR()
     result = ocr_model.ocr(img_array)
