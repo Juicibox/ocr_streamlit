@@ -2,6 +2,7 @@ import streamlit as st
 import numpy as np
 from PIL import Image
 import pytesseract
+import pyperclip
 from paddleocr import PaddleOCR
 
 st.title("Extractor de texto de imágenes")
