@@ -16,5 +16,14 @@ if img_file is not None:
         text = pytesseract.image_to_string(image)
         st.write("Texto extraído:")
         st.write(text)
+
+        ocr_model = PaddleOCR()
+        result = ocr_model.ocr(img_array)
+        result = result[0]
+        texts = [res[1][0] for res in result]
+    
+
+    # Mostrar resultado
+        st.write(texts)
     else:
         st.error("Error al cargar la imagen. Por favor, inténtalo de nuevo.")
