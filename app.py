@@ -24,7 +24,12 @@ if img_file is not None:
     text_area = st.text_area("Texto extraído", text, height=200)
 
     # Botón para copiar el texto al portapapeles
-if st.button("Copiar texto"):
-    pyperclip.copy(text_area)
-    st.success("Texto copiado al portapapeles")
+    if st.button("Copiar texto"):
+        try:
+            pyperclip.copy(text_area)
+            st.success("Texto copiado al portapapeles")
+        except pyperclip.PyperclipException:
+            st.write("Please copy the following link:")
+        
+        
             
