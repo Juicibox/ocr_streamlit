@@ -7,8 +7,8 @@ from paddleocr import PaddleOCR
 st.title("Extractor de texto de imágenes")
 
 img_file = st.file_uploader("Cargar imagen", type=['jpg', 'jpeg', 'png', 'webp', 'bmp'])
-if img_file_buffer is not None:
-    image = Image.open(img_file_buffer)
+if img_file is not None:
+    image = Image.open(img_file)
     img_array = np.array(image)
 
     # Procesar imagen con PaddleOCR
