@@ -18,6 +18,11 @@ if img_file is not None:
     result = result[0]
     texts = [res[1][0] for res in result]
     
-    st.write("Texto extraido")
+    st.write("Texto extraido:")
     # Mostrar resultado
-    st.write(texts)
+    text_area = st.text_area("Texto extraído", "\n".join(texts), height=200)
+
+        # Botón para copiar el texto al portapapeles
+    if st.button("Copiar texto"):
+        pyperclip.copy("\n".join(texts))
+        st.success("Texto copiado al portapapeles")
