@@ -6,7 +6,7 @@ import pyperclip
 from paddleocr import PaddleOCR
 
 st.set_page_config(page_title="Img to Text", page_icon="logo.png")
-st.logo("logo.png", size="medium")
+
 
 st.title("Extractor de texto de imágenes")
 
