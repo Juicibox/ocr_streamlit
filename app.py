@@ -7,6 +7,28 @@ from paddleocr import PaddleOCR
 
 st.set_page_config(page_title="Img to Text", page_icon="logo.png")
 
+# CSS para agregar fondo y estilizar la página
+page_bg_img = '''
+<style>
+body {
+    background-image: url("https://www.example.com/fondo.jpg"); /* Cambia esta URL por la de tu imagen */
+    background-size: cover;
+}
+header {
+    background-color: rgba(255, 255, 255, 0.8);
+    padding: 10px;
+    border-radius: 10px;
+    text-align: center;
+}
+.stTextArea, .stFileUploader {
+    background-color: rgba(255, 255, 255, 0.8);
+    padding: 10px;
+    border-radius: 10px;
+}
+</style>
+'''
+
+st.markdown(page_bg_img, unsafe_allow_html=True)
 
 st.title("Extractor de texto de imágenes")
 
