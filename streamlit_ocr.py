@@ -5,7 +5,7 @@ logo_path = "logo.png"
 st.logo(logo_path, size="medium")
 
 st.set_page_config(
-    page_title="ATS CV",
+    page_title="Img to Text",
     page_icon=logo_path
 )
 
