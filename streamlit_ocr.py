@@ -1,13 +1,12 @@
 import streamlit as st
 from paddleocr import PaddleOCR
 
-logo_path = "logo.png"
-st.logo(logo_path, size="medium")
 
-st.set_page_config(
-    page_title="Img to Text",
-    page_icon=logo_path
-)
+st.set_page_config(page_title="Img to Text", page_icon="logo.png")
+
+
+st.logo("logo.png", size="medium")
+
 
 img_file_buffer = st.file_uploader("Cargar imagen", type=['jpg', 'jpeg', 'png', 'webp', 'bmp'])
 if img_file_buffer is not None:
