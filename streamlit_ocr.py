@@ -1,6 +1,14 @@
 import streamlit as st
 from paddleocr import PaddleOCR
 
+logo_path = "logo.png"
+st.logo(logo_path, size="medium")
+
+st.set_page_config(
+    page_title="ATS CV",
+    page_icon=logo_path
+)
+
 img_file_buffer = st.file_uploader("Cargar imagen", type=['jpg', 'jpeg', 'png', 'webp', 'bmp'])
 if img_file_buffer is not None:
     image = Image.open(img_file_buffer)
