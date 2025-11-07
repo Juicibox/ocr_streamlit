@@ -4,6 +4,6 @@ googlesearch-python==1.2.3
 paddle-bfloat==0.1.7
 paddleocr==2.6.1.3
 paddlepaddle==2.5.0
-pytesseract
-opencv-python
-pyperclip
+pytesseract==0.3.10
+opencv-python==4.10.0.82
+pyperclip==1.9.0
