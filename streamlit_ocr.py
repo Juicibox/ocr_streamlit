@@ -1,199 +1,187 @@
 import streamlit as st
 import numpy as np
 from PIL import Image
-import pytesseract
 import pandas as pd
 import io
-import cv2
-import re
-from pytesseract import Output
+from doctr.io import DocumentFile
+from doctr.models import ocr_predictor
+import tempfile
+import os
 
-# Configuración de página
-st.set_page_config(page_title="OCR Tablas", page_icon="📊")
+# Configuración
+st.set_page_config(page_title="OCR Pro con docTR", page_icon="📊")
 
-st.title("📊 OCR para Tablas")
-st.markdown("Extrae datos tabulares manteniendo la estructura de filas y columnas")
+st.title("📊 OCR Pro - docTR")
+st.markdown("OCR de alto rendimiento con detección de tablas")
 
-# Cargar imagen
+@st.cache_resource
+def load_ocr_model():
+    """Carga el modelo de docTR (se cachea para no recargar)"""
+    with st.spinner("Cargando modelo de IA... (primera vez)"):
+        # Modelo preentrenado para detección + reconocimiento
+        model = ocr_predictor(
+            det_arch='db_resnet50',      # Detector de texto
+            reco_arch='crnn_vgg16_bn',    # Reconocimiento de texto
+            pretrained=True
+        )
+    return model
+
+# Cargar modelo
+predictor = load_ocr_model()
+
+# Subir imagen
 img_file_buffer = st.file_uploader(
-    "Cargar imagen de tabla", 
-    type=['jpg', 'jpeg', 'png', 'webp', 'bmp']
+    "Cargar imagen", 
+    type=['jpg', 'jpeg', 'png', 'webp', 'pdf']
 )
-
-def clean_text(text):
-    """Limpia caracteres de borde de tabla y espacios extras"""
-    # Eliminar caracteres de borde comunes en tablas
-    text = re.sub(r'[\|\─\━\═\─\–\—]', '', text)  # Quitar | y líneas
-    text = text.strip()
-    # Normalizar espacios múltiples
-    text = ' '.join(text.split())
-    return text
 
 if img_file_buffer is not None:
     try:
-        # Abrir imagen
-        image = Image.open(img_file_buffer)
-        img_array = np.array(image)
+        # Guardar temporalmente
+        with tempfile.NamedTemporaryFile(delete=False, suffix='.jpg') as tmp:
+            tmp.write(img_file_buffer.getvalue())
+            tmp_path = tmp.name
         
-        # Preprocesamiento mejorado
-        if len(img_array.shape) == 3:
-            gray = cv2.cvtColor(img_array, cv2.COLOR_RGB2GRAY)
-        else:
-            gray = img_array
-        
-        # Mejorar contraste
-        _, binary = cv2.threshold(gray, 150, 255, cv2.THRESH_BINARY_INV)
+        # Cargar con docTR
+        doc = DocumentFile.from_images(tmp_path)
         
         # Mostrar imagen
         col1, col2 = st.columns(2)
         with col1:
             st.subheader("📷 Imagen")
+            image = Image.open(img_file_buffer)
             st.image(image, use_container_width=True)
         
-        with st.spinner("🔍 Analizando estructura de tabla..."):
+        with st.spinner("🔍 Procesando con IA..."):
+            # OCR
+            result = predictor(doc)
             
-            # Configuración optimizada para tablas
-            custom_config = r'--oem 3 --psm 6 -c preserve_interword_spaces=1'
+            # Extraer texto plano
+            text_export = result.render()
             
-            data = pytesseract.image_to_data(
-                gray, 
-                output_type=Output.DICT, 
-                lang='spa',
-                config=custom_config
-            )
+            # Extraer bloques con coordenadas para tabla
+            pages = result.pages
             
-            # Filtrar texto válido
-            conf_threshold = 35
-            items = []
-            
-            for i in range(len(data['text'])):
-                conf = int(data['conf'][i])
-                text = data['text'][i].strip()
+            for page in pages:
+                # Obtener todas las líneas/bloques
+                blocks = []
                 
-                # Limpiar y validar
-                text_clean = clean_text(text)
+                for block in page.blocks:
+                    for line in block.lines:
+                        line_text = " ".join([word.value for word in line.words])
+                        # Coordenadas del centro de la línea
+                        y_center = (line.geometry[0][1] + line.geometry[1][1]) / 2
+                        x_center = (line.geometry[0][0] + line.geometry[1][0]) / 2
+                        
+                        blocks.append({
+                            'text': line_text,
+                            'y': y_center,
+                            'x': x_center,
+                            'conf': np.mean([word.confidence for word in line.words]) if line.words else 0
+                        })
                 
-                if conf > conf_threshold and text_clean and len(text_clean) > 1:
-                    items.append({
-                        'text': text_clean,
-                        'x': data['left'][i],
-                        'y': data['top'][i],
-                        'height': data['height'][i]
-                    })
-            
-            if not items:
-                st.error("No se detectó texto válido")
-                st.stop()
-            
-            # AGRUPAR POR FILAS
-            avg_height = np.mean([item['height'] for item in items])
-            y_tolerance = avg_height * 0.7
-            
-            items_sorted = sorted(items, key=lambda x: x['y'])
-            rows = []
-            current_row = []
-            current_y = None
-            
-            for item in items_sorted:
-                if current_y is None:
-                    current_y = item['y']
-                    current_row.append(item)
-                elif abs(item['y'] - current_y) <= y_tolerance:
-                    current_row.append(item)
-                else:
-                    rows.append(sorted(current_row, key=lambda x: x['x']))
-                    current_row = [item]
-                    current_y = item['y']
-            
-            if current_row:
-                rows.append(sorted(current_row, key=lambda x: x['x']))
-            
-            # CONSTRUIR TABLA
-            if len(rows) > 0:
-                # Determinar número de columnas (usar moda o máximo razonable)
-                col_counts = [len(row) for row in rows]
-                # Filtrar filas con muy pocas celdas (probablemente ruido)
-                valid_rows = [row for row in rows if len(row) >= 2]
+                if not blocks:
+                    st.warning("No se detectó texto")
+                    continue
                 
-                if not valid_rows:
-                    valid_rows = rows
+                # AGRUPAR EN FILAS (por posición Y)
+                blocks_sorted = sorted(blocks, key=lambda b: b['y'])
                 
-                max_cols = max(len(row) for row in valid_rows)
+                rows = []
+                current_row = []
+                current_y = None
+                y_tolerance = 0.02  # 2% de tolerancia en altura
                 
-                # Crear matriz uniforme
-                table_data = []
-                for row in valid_rows:
-                    row_texts = [cell['text'] for cell in row]
-                    # Rellenar o truncar para igualar columnas
-                    while len(row_texts) < max_cols:
-                        row_texts.append("")
-                    table_data.append(row_texts[:max_cols])
+                for block in blocks_sorted:
+                    if current_y is None:
+                        current_y = block['y']
+                        current_row.append(block)
+                    elif abs(block['y'] - current_y) <= y_tolerance:
+                        current_row.append(block)
+                    else:
+                        rows.append(sorted(current_row, key=lambda b: b['x']))
+                        current_row = [block]
+                        current_y = block['y']
                 
-                # Crear DataFrame con nombres únicos
-                if len(table_data) > 0:
-                    # Generar headers únicos
+                if current_row:
+                    rows.append(sorted(current_row, key=lambda b: b['x']))
+                
+                # Crear DataFrame
+                if len(rows) > 0:
+                    max_cols = max(len(r) for r in rows)
+                    table_data = []
+                    
+                    for row in rows:
+                        texts = [b['text'] for b in row]
+                        while len(texts) < max_cols:
+                            texts.append("")
+                        table_data.append(texts[:max_cols])
+                    
+                    # Crear DF
                     if len(table_data) > 1:
-                        raw_headers = table_data[0]
-                        # Asegurar headers únicos
-                        headers = []
+                        headers = [f"Col_{i+1}" if not h else h[:50] 
+                                  for i, h in enumerate(table_data[0])]
+                        # Hacer únicos
                         seen = {}
-                        for i, h in enumerate(raw_headers):
-                            if not h:  # Si está vacío
-                                h = f"Col_{i+1}"
+                        unique_headers = []
+                        for h in headers:
                             if h in seen:
                                 seen[h] += 1
-                                h = f"{h}_{seen[h]}"
+                                unique_headers.append(f"{h}_{seen[h]}")
                             else:
                                 seen[h] = 0
-                            headers.append(h)
+                                unique_headers.append(h)
                         
-                        df = pd.DataFrame(table_data[1:], columns=headers)
+                        df = pd.DataFrame(table_data[1:], columns=unique_headers)
                     else:
                         df = pd.DataFrame(table_data)
-                
-                # MOSTRAR RESULTADO
-                with col2:
-                    st.subheader(f"📋 Tabla detectada ({len(df)} filas, {len(df.columns)} cols)")
-                    st.dataframe(df, use_container_width=True, hide_index=True)
-                
-                # EDICIÓN Y EXPORTACIÓN
-                st.markdown("---")
-                st.subheader("✏️ Editar y Exportar")
-                
-                edited_df = st.data_editor(df, num_rows="dynamic", use_container_width=True)
-                
-                col_csv, col_excel = st.columns(2)
-                
-                with col_csv:
-                    csv = edited_df.to_csv(index=False)
-                    st.download_button("📥 Descargar CSV", csv, "tabla.csv", "text/csv")
-                
-                with col_excel:
-                    buffer = io.BytesIO()
-                    edited_df.to_excel(buffer, index=False, engine='openpyxl')
-                    st.download_button("📥 Descargar Excel", buffer.getvalue(), "tabla.xlsx",
-                                     "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
-                
-                # Debug
-                with st.expander("🔍 Debug - Ver filas detectadas"):
-                    for i, row in enumerate(table_data[:10]):  # Mostrar primeras 10
-                        st.write(f"Fila {i}: {row}")
                     
+                    # Mostrar resultado
+                    with col2:
+                        st.subheader(f"📋 Resultado ({len(df)} filas)")
+                        st.dataframe(df, use_container_width=True, hide_index=True)
+                    
+                    # Tabs para diferentes vistas
+                    tab1, tab2, tab3 = st.tabs(["📊 Tabla", "📝 Texto", "🔧 Editar"])
+                    
+                    with tab1:
+                        st.dataframe(df, use_container_width=True)
+                        
+                        # Exportar
+                        c1, c2 = st.columns(2)
+                        with c1:
+                            st.download_button("📥 CSV", df.to_csv(index=False), "datos.csv")
+                        with c2:
+                            buf = io.BytesIO()
+                            df.to_excel(buf, index=False, engine='openpyxl')
+                            st.download_button("📥 Excel", buf.getvalue(), "datos.xlsx")
+                    
+                    with tab2:
+                        st.text_area("Texto detectado", text_export, height=300)
+                        st.download_button("📥 TXT", text_export, "texto.txt")
+                    
+                    with tab3:
+                        edited = st.data_editor(df, num_rows="dynamic", use_container_width=True)
+                        if st.button("💾 Guardar cambios"):
+                            st.success("¡Listo para descargar desde las pestañas anteriores!")
+        
+        # Limpiar temp
+        os.unlink(tmp_path)
+        
     except Exception as e:
         st.error(f"Error: {str(e)}")
         st.exception(e)
 
 else:
-    st.info("👆 Sube una imagen con tabla para comenzar")
+    st.info("👆 Sube una imagen o PDF")
     
-    with st.expander("💡 Consejos"):
-        st.markdown("""
-        - Resolución mínima: 150 DPI
-        - Evita fotos con ángulo (lo más plano posible)
-        - Buena iluminación sin sombras
-        - Selecciona el idioma correcto
-        """)
+    st.markdown("""
+    ### ✨ Ventajas de docTR:
+    - **Deep Learning**: Redes neuronales entrenadas con millones de documentos
+    - **Detección precisa**: Encuentra texto en cualquier orientación
+    - **Tablas complejas**: Mejor manejo de celdas combinadas
+    - **PDF nativo**: Soporta documentos multipágina
+    """)
 
 st.markdown("---")
-st.caption("OCR con Tesseract + OpenCV")
-                            
+st.caption("Powered by docTR (Mindee) + Streamlit")
