@@ -1,5 +1,7 @@
 import streamlit as st
-from paddleocr import PaddleOCR
+import numpy as np
+from PIL import Image
+import pytesseract
 
 
 st.set_page_config(page_title="Img to Text", page_icon="logo.png")
@@ -11,14 +13,10 @@ st.logo("logo.png", size="medium")
 img_file_buffer = st.file_uploader("Cargar imagen", type=['jpg', 'jpeg', 'png', 'webp', 'bmp'])
 if img_file_buffer is not None:
     image = Image.open(img_file_buffer)
-    img_array = np.array(image)
 
-    # Procesar imagen con PaddleOCR
-    ocr_model = PaddleOCR()
-    result = ocr_model.ocr(img_array)
-    result = result[0]
-    texts = [res[1][0] for res in result]
-    
+    # Procesar imagen con pytesseract
+    text = pytesseract.image_to_string(image)
 
     # Mostrar resultado
-    st.write(texts)
+    st.text_area("Texto extraído", text, height=200)
+
