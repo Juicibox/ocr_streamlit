@@ -1,6 +1,6 @@
-
-pytesseract==0.3.10
-streamlit>=1.28.0
-Pillow>=10.0.0
-numpy>=1.26.0
-opencv-python>=4.8.0
+streamlit>=1.40.0
+Pillow>=10.4.0
+numpy>=1.26.0,<2.0
+pytesseract>=0.3.13
+pandas>=2.0.0
+openpyxl>=3.1.0
